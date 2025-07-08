@@ -1,16 +1,11 @@
 import os
 import requests
-from dotenv import load_dotenv
+import streamlit as st
 from xhtml2pdf import pisa
 from io import BytesIO
 import qrcode
 
-# Load environment variables
-load_dotenv()
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-
-if not GROQ_API_KEY:
-    raise ValueError("❌ GROQ_API_KEY not loaded from .env")
+GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 
 # GROQ API details
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
