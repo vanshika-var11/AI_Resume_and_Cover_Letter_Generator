@@ -151,6 +151,7 @@ It should include a greeting, role interest, highlighted skills, and a positive 
 
 
 
+
 def convert_to_pdf(content_md, output_file="output.pdf"):
     pdf = FPDF()
     pdf.add_page()
@@ -161,9 +162,11 @@ def convert_to_pdf(content_md, output_file="output.pdf"):
     for line in lines:
         pdf.multi_cell(0, 10, txt=line, align="L")
 
-    output = BytesIO()
-    pdf.output(output)
-    return output.getvalue()
+    # Get the PDF as a byte string
+    pdf_bytes = pdf.output(dest='S').encode('latin-1')
+
+    return pdf_bytes
+
 
 
 def generate_qr_code(linkedin_url):
