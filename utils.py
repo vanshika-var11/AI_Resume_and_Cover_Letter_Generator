@@ -4,6 +4,7 @@ import streamlit as st
 from io import BytesIO
 import pdfkit
 import qrcode
+from fpdf import FPDF
 
 # Load API key from Streamlit secrets
 GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
@@ -148,11 +149,21 @@ It should include a greeting, role interest, highlighted skills, and a positive 
     return response.json()["choices"][0]["message"]["content"].strip()
 
 
+
+
 def convert_to_pdf(content_md, output_file="output.pdf"):
-    html_content = f"<html><body><pre>{content_md}</pre></body></html>"
-    options = {'enable-local-file-access': None}
-    pdf_bytes = pdfkit.from_string(html_content, False, options=options)
-    return pdf_bytes
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=12)
+
+    lines = content_md.strip().split('\n')
+    for line in lines:
+        pdf.multi_cell(0, 10, txt=line, align="L")
+
+    output = BytesIO()
+    pdf.output(output)
+    return output.getvalue()
 
 
 def generate_qr_code(linkedin_url):
