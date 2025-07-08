@@ -1,10 +1,11 @@
 import os
 import requests
 import streamlit as st
-from xhtml2pdf import pisa
 from io import BytesIO
+import pdfkit
 import qrcode
 
+# Load API key from Streamlit secrets
 GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 
 # GROQ API details
@@ -15,7 +16,6 @@ headers = {
     "Authorization": f"Bearer {GROQ_API_KEY}",
     "Content-Type": "application/json"
 }
-
 
 def build_prompt(template, name, email, phone, job_title, company, experience, skills, education, linkedin_url):
     contact_info = f"Email: {email}\nPhone: {phone}"
@@ -150,11 +150,9 @@ It should include a greeting, role interest, highlighted skills, and a positive 
 
 def convert_to_pdf(content_md, output_file="output.pdf"):
     html_content = f"<html><body><pre>{content_md}</pre></body></html>"
-    result = BytesIO()
-    pisa_status = pisa.CreatePDF(html_content, dest=result)
-    if pisa_status.err:
-        return None
-    return result.getvalue()
+    options = {'enable-local-file-access': None}
+    pdf_bytes = pdfkit.from_string(html_content, False, options=options)
+    return pdf_bytes
 
 
 def generate_qr_code(linkedin_url):
