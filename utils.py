@@ -1,14 +1,13 @@
 import os
 import requests
 import streamlit as st
-from io import BytesIO
-import pdfkit
 from fpdf import FPDF
+from docx import Document
+from docx.shared import Pt
+from io import BytesIO
 
-# Load API key from Streamlit secrets
+# Load API key securely from Streamlit secrets
 GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
-
-# GROQ API details
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MODEL_NAME = "llama3-70b-8192"
 
@@ -22,34 +21,35 @@ def build_prompt(template, name, email, phone, job_title, company, experience, s
     if linkedin_url:
         contact_info += f"\nLinkedIn: {linkedin_url}"
 
-    skills_list_bullet = '\n- '.join(skill.strip() for skill in skills.split(','))
+    skills_list_bullet = '\n- ' + '\n- '.join(skill.strip() for skill in skills.split(','))
     skills_inline = ', '.join(skill.strip() for skill in skills.split(','))
 
     if template == "📋 Structured Pro":
         return f"""
 # {name}
 
-**Contact Info**  
-{contact_info}
+**📩 Email**: {email}  
+**📞 Phone**: {phone}  
+{f'**🔗 LinkedIn**: {linkedin_url}' if linkedin_url else ''}
 
 ---
 
-## 🎯 Objective  
-Aspiring {job_title} role at **{company}**.
+### 🎯 Objective  
+To secure a position as a **{job_title}** at **{company}**, leveraging my analytical skills to drive actionable insights.
 
 ---
 
-## 🛠️ Skills  
-- {skills_list_bullet}
+### 🛠️ Technical Skills  
+{skills_list_bullet}
 
 ---
 
-## 🎓 Education  
+### 🎓 Education  
 {education}
 
 ---
 
-## 💼 Projects / Work Experience  
+### 💼 Projects & Experience  
 {experience}
 """
 
@@ -57,74 +57,77 @@ Aspiring {job_title} role at **{company}**.
         return f"""
 # 👩‍💼 {name}
 
-📧 {email} | 📞 {phone} {'| 🔗 ' + linkedin_url if linkedin_url else ''}
+📧 {email} &nbsp;|&nbsp; 📱 {phone} {'| 🔗 ' + linkedin_url if linkedin_url else ''}
 
 ---
 
-## 🎯 Objective  
-Excited to apply as a **{job_title}** at **{company}**, where I can bring my unique skills and creativity.
+## 🚀 Career Objective  
+I'm thrilled to apply as a **{job_title}** at **{company}**, where I can blend creativity with analytical thinking to solve real-world problems.
 
 ---
 
-## 🌟 Skills  
-- {skills_list_bullet}
+## 🎨 Key Skills  
+✅ {skills_inline}
 
 ---
 
-## 🎓 Education  
-{education}
+## 🎓 Educational Background  
+🎓 {education}
 
 ---
 
-## 🧪 Experience / Projects  
-{experience}
+## 🧪 Projects & Experience  
+✨ {experience}
 """
 
     elif template == "🧘 Focused Minimal":
         return f"""
 # {name}
 
-**Contact:**  
-{contact_info}
+Contact: {email} | {phone} {'| ' + linkedin_url if linkedin_url else ''}
 
----
+------------------------------------------------------------
 
-## Objective  
-Seeking the position of {job_title} at {company}.
+Objective:  
+Seeking a position as {job_title} at {company} to apply analytical skills in a focused and impactful manner.
 
----
-
-## Skills  
+Skills:  
 {skills_inline}
 
----
-
-## Education  
+Education:  
 {education}
 
----
-
-## Experience / Projects  
+Experience:  
 {experience}
 """
     else:
         return "Invalid template selected."
 
-
 def generate_resume(name, email, phone, job_title, company, experience, skills, education, linkedin_url, template):
-    prompt = build_prompt(template, name, email, phone, job_title, company, experience, skills, education, linkedin_url)
+    try:
+        prompt = build_prompt(template, name, email, phone, job_title, company, experience, skills, education, linkedin_url)
+        prompt += "\n\nNote: Do NOT include any explanations, notes, or messages. Only return the final clean resume content."
 
-    response = requests.post(GROQ_URL, headers=headers, json={
-        "model": MODEL_NAME,
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.7
-    })
+        response = requests.post(GROQ_URL, headers=headers, json={
+            "model": MODEL_NAME,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.7
+        })
 
-    return response.json()["choices"][0]["message"]["content"].strip()
+        result = response.json()["choices"][0]["message"]["content"].strip()
 
+        # Remove any unwanted note
+        if "Note:" in result:
+            result = result.split("Note:")[0].strip()
+
+        return result
+
+    except Exception as e:
+        return f"❌ Error generating resume: {str(e)}"
 
 def generate_cover_letter(name, email, phone, job_title, company, experience, skills, education):
-    prompt = f"""
+    try:
+        prompt = f"""
 Write a formal and enthusiastic cover letter in Markdown format using these details:
 
 Full Name: {name}  
@@ -139,17 +142,22 @@ Education: {education}
 It should include a greeting, role interest, highlighted skills, and a positive closing.
 """
 
-    response = requests.post(GROQ_URL, headers=headers, json={
-        "model": MODEL_NAME,
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.7
-    })
+        response = requests.post(GROQ_URL, headers=headers, json={
+            "model": MODEL_NAME,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.7
+        })
 
-    return response.json()["choices"][0]["message"]["content"].strip()
+        result = response.json()["choices"][0]["message"]["content"].strip()
 
+        # Remove any accidental "Note:"
+        if "Note:" in result:
+            result = result.split("Note:")[0].strip()
 
+        return result
 
-
+    except Exception as e:
+        return f"❌ Error generating cover letter: {str(e)}"
 
 def convert_to_pdf(content_md, output_file="output.pdf"):
     pdf = FPDF()
@@ -161,13 +169,19 @@ def convert_to_pdf(content_md, output_file="output.pdf"):
     for line in lines:
         pdf.multi_cell(0, 10, txt=line, align="L")
 
-    # Get the PDF as a byte string
-    pdf_bytes = pdf.output(dest='S').encode('latin-1')
+    return pdf.output(dest='S').encode('latin-1')
 
-    return pdf_bytes
+def convert_to_docx(content_md):
+    doc = Document()
+    style = doc.styles['Normal']
+    font = style.font
+    font.name = 'Arial'
+    font.size = Pt(11)
 
+    for line in content_md.strip().split('\n'):
+        doc.add_paragraph(line)
 
-
-def generate_qr_code(linkedin_url):
-    qr = qrcode.make(linkedin_url)
-    return qr
+    byte_io = BytesIO()
+    doc.save(byte_io)
+    byte_io.seek(0)
+    return byte_io.read()
