@@ -13,7 +13,8 @@ def is_valid_email(email):
 
 
 def is_valid_phone(phone):
-    return re.match(r"^[\\d\\-\\+\\s\\(\\)]{7,15}$", phone)
+    return re.fullmatch(r"[6-9]\d{9}", phone)
+
 
 def is_valid_linkedin(link):
     return link.startswith("https://www.linkedin.com/in/")
