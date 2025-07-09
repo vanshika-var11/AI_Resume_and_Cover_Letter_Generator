@@ -3,8 +3,7 @@ import traceback
 from dotenv import load_dotenv
 import os
 from markdown2 import markdown
-import base64
-from utils import generate_resume, generate_cover_letter, convert_to_pdf, generate_qr_code
+from utils import generate_resume, generate_cover_letter, convert_to_pdf
 
 try:
     load_dotenv()
@@ -26,7 +25,7 @@ try:
     # Template Switcher
     template = st.radio("Choose Resume Template", ["📋 Structured Pro", "🎨 Creative Spark", "🧘 Focused Minimal"], horizontal=True)
 
-    # Dynamic style variables
+    
     bg_color = "#1e1e1e" if theme == "🌙 Dark" else "#f9f9f9"
     text_color = "#ffffff" if theme == "🌙 Dark" else "#000000"
 
@@ -85,7 +84,7 @@ try:
                 </div>
             """, unsafe_allow_html=True)
 
-        # PDF Export Buttons
+        # PDF 
         col1, col2 = st.columns(2)
         with col1:
             st.download_button("📥 Download Resume PDF", data=convert_to_pdf(resume), file_name="resume.pdf", mime="application/pdf")

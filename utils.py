@@ -3,7 +3,6 @@ import requests
 import streamlit as st
 from io import BytesIO
 import pdfkit
-import qrcode
 from fpdf import FPDF
 
 # Load API key from Streamlit secrets
