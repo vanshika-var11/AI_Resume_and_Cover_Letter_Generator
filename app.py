@@ -8,7 +8,9 @@ from utils import generate_resume, generate_cover_letter, convert_to_pdf, conver
 
 
 def is_valid_email(email):
-    return re.match(r"[^@]+@[^@]+\\.[^@]+", email)
+    return re.match(r"[^@]+@[^@]+\.[^@]+", email)
+
+
 
 def is_valid_phone(phone):
     return re.match(r"^[\\d\\-\\+\\s\\(\\)]{7,15}$", phone)
