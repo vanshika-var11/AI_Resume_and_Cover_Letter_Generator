@@ -3,10 +3,10 @@ import requests
 import streamlit as st
 from fpdf import FPDF
 from docx import Document
-from docx.shared import Pt
+from docx.shared import Pt, RGBColor
 from io import BytesIO
 
-# Load API key securely from Streamlit secrets
+# Secure API Setup
 GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MODEL_NAME = "llama3-70b-8192"
@@ -16,11 +16,8 @@ headers = {
     "Content-Type": "application/json"
 }
 
-def build_prompt(template, name, email, phone, job_title, company, experience, skills, education, linkedin_url):
-    contact_info = f"Email: {email}\nPhone: {phone}"
-    if linkedin_url:
-        contact_info += f"\nLinkedIn: {linkedin_url}"
 
+def build_prompt(template, name, email, phone, job_title, company, experience, skills, education, linkedin_url):
     skills_list_bullet = '\n- ' + '\n- '.join(skill.strip() for skill in skills.split(','))
     skills_inline = ', '.join(skill.strip() for skill in skills.split(','))
 
@@ -28,9 +25,11 @@ def build_prompt(template, name, email, phone, job_title, company, experience, s
         return f"""
 # {name}
 
-**📩 Email**: {email}  
-**📞 Phone**: {phone}  
-{f'**🔗 LinkedIn**: {linkedin_url}' if linkedin_url else ''}
+---
+
+📩 **Email**: {email}  
+📞 **Phone**: {phone}  
+{f'🔗 **LinkedIn**: {linkedin_url}' if linkedin_url else ''}
 
 ---
 
@@ -52,56 +51,38 @@ To secure a position as a **{job_title}** at **{company}**, leveraging my analyt
 ### 💼 Projects & Experience  
 {experience}
 """
-
-    elif template == "🎨 Creative Spark":
-        return f"""
-# 👩‍💼 {name}
-
-📧 {email} &nbsp;|&nbsp; 📱 {phone} {'| 🔗 ' + linkedin_url if linkedin_url else ''}
-
----
-
-## 🚀 Career Objective  
-I'm thrilled to apply as a **{job_title}** at **{company}**, where I can blend creativity with analytical thinking to solve real-world problems.
-
----
-
-## 🎨 Key Skills  
-✅ {skills_inline}
-
----
-
-## 🎓 Educational Background  
-🎓 {education}
-
----
-
-## 🧪 Projects & Experience  
-✨ {experience}
-"""
-
     elif template == "🧘 Focused Minimal":
         return f"""
 # {name}
 
-Contact: {email} | {phone} {'| ' + linkedin_url if linkedin_url else ''}
+---
 
-------------------------------------------------------------
+**Email**: {email} | **Phone**: {phone}{' | **LinkedIn**: ' + linkedin_url if linkedin_url else ''}
 
-Objective:  
+---
+
+**Objective**  
 Seeking a position as {job_title} at {company} to apply analytical skills in a focused and impactful manner.
 
-Skills:  
+---
+
+**Skills**  
 {skills_inline}
 
-Education:  
+---
+
+**Education**  
 {education}
 
-Experience:  
+---
+
+**Experience**  
 {experience}
 """
     else:
         return "Invalid template selected."
+
+
 
 def generate_resume(name, email, phone, job_title, company, experience, skills, education, linkedin_url, template):
     try:
@@ -115,15 +96,13 @@ def generate_resume(name, email, phone, job_title, company, experience, skills, 
         })
 
         result = response.json()["choices"][0]["message"]["content"].strip()
-
-        # Remove any unwanted note
         if "Note:" in result:
             result = result.split("Note:")[0].strip()
 
         return result
-
     except Exception as e:
         return f"❌ Error generating resume: {str(e)}"
+
 
 def generate_cover_letter(name, email, phone, job_title, company, experience, skills, education):
     try:
@@ -141,7 +120,6 @@ Education: {education}
 
 It should include a greeting, role interest, highlighted skills, and a positive closing.
 """
-
         response = requests.post(GROQ_URL, headers=headers, json={
             "model": MODEL_NAME,
             "messages": [{"role": "user", "content": prompt}],
@@ -149,27 +127,39 @@ It should include a greeting, role interest, highlighted skills, and a positive 
         })
 
         result = response.json()["choices"][0]["message"]["content"].strip()
-
-        # Remove any accidental "Note:"
         if "Note:" in result:
             result = result.split("Note:")[0].strip()
 
         return result
-
     except Exception as e:
         return f"❌ Error generating cover letter: {str(e)}"
+
+
 
 def convert_to_pdf(content_md, output_file="output.pdf"):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", size=12)
 
+    # Title band
     lines = content_md.strip().split('\n')
-    for line in lines:
+    name_line = lines[0].strip().replace("#", "").strip()
+
+    pdf.set_fill_color(0, 123, 255)
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 15, txt=name_line, ln=True, align="C", fill=True)
+    pdf.ln(5)
+
+    # Resume Body
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font("Arial", "", 12)
+    for line in lines[2:]:
         pdf.multi_cell(0, 10, txt=line, align="L")
 
     return pdf.output(dest='S').encode('latin-1')
+
+
 
 def convert_to_docx(content_md):
     doc = Document()
@@ -178,7 +168,20 @@ def convert_to_docx(content_md):
     font.name = 'Arial'
     font.size = Pt(11)
 
-    for line in content_md.strip().split('\n'):
+    lines = content_md.strip().split('\n')
+    name_line = lines[0].strip().replace("#", "").strip()
+
+    # Header
+    title = doc.add_paragraph()
+    title.alignment = 1  # Center align
+    run = title.add_run(name_line)
+    run.bold = True
+    run.font.size = Pt(16)
+    run.font.color.rgb = RGBColor(0, 112, 192)  # Blue header
+
+    doc.add_paragraph("\n")
+
+    for line in lines[2:]:
         doc.add_paragraph(line)
 
     byte_io = BytesIO()
