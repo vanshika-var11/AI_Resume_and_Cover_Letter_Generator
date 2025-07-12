@@ -5,6 +5,9 @@ from fpdf import FPDF
 from docx import Document
 from docx.shared import Pt, RGBColor
 from io import BytesIO
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+
 
 # Secure API Setup
 GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
@@ -136,28 +139,31 @@ It should include a greeting, role interest, highlighted skills, and a positive 
 
 
 
-def convert_to_pdf(content_md, output_file="output.pdf"):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
+def convert_to_pdf(content_text, output_file="output.pdf"):
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    
+    width, height = A4
+    pdf.setFont("Helvetica", 12)
 
-    # Title band
-    lines = content_md.strip().split('\n')
-    name_line = lines[0].strip().replace("#", "").strip()
+    # Starting position from top of the page
+    x = 50
+    y = height - 50
+    line_height = 16
 
-    pdf.set_fill_color(0, 123, 255)
-    pdf.set_text_color(255, 255, 255)
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 15, txt=name_line, ln=True, align="C", fill=True)
-    pdf.ln(5)
+    lines = content_text.strip().split('\n')
+    for line in lines:
+        if y < 50:  # Add new page if space runs out
+            pdf.showPage()
+            pdf.setFont("Helvetica", 12)
+            y = height - 50
+        pdf.drawString(x, y, line)
+        y -= line_height
 
-    # Resume Body
-    pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Arial", "", 12)
-    for line in lines[2:]:
-        pdf.multi_cell(0, 10, txt=line, align="L")
-
-    return pdf.output(dest='S').encode('latin-1')
+    pdf.save()
+    pdf_data = buffer.getvalue()
+    buffer.close()
+    return pdf_data
 
 
 
