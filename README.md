@@ -16,7 +16,7 @@ Generate beautiful, professional resumes and cover letters in seconds using **LL
 
 🖼️ Demo
 
-🔗 Live Demo: [Click to open your app](https://airesumeandcoverlettergenerator-<your-id>.streamlit.app/](http://airesumeandcoverlettergenerator-abarsxq2tvcxbzybafufwa.streamlit.app/)
+🔗 Live Demo: http://airesumeandcoverlettergenerator-abarsxq2tvcxbzybafufwa.streamlit.app/
 
 
 
@@ -115,7 +115,4 @@ Pull requests are welcome! For major changes, please open an issue first.
 This project is licensed under the MIT License.
 
 
-🛠 Pro Tip:
-- Replace `your-username`, `your-groq-api-key`, and live app link accordingly.
-- You can add a GIF or screenshot under `🖼️ Demo` for more spice 🌶️
 
